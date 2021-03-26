@@ -20,11 +20,9 @@ var gRenderer *sdl.Renderer
 //Current displayed texture
 // var gTexture *sdl.Texture
 
-// Scene textures
-var gFooTexture lTexture
-var gBackgroundTexture lTexture
-
-//
+// Scene sprites
+var gSpriteClips [4]sdl.Rect
+var gSpriteSheetTexture *lTexture = &lTexture{}
 
 // Texture wrapper
 type lTexture struct {
@@ -37,7 +35,9 @@ type lTexture struct {
 }
 
 func (l *lTexture) loadFromFile(path string) (err error) {
-	l.free()
+	if l != nil {
+		l.free()
+	}
 
 	var loadedSurface *sdl.Surface
 	defer loadedSurface.Free()
@@ -64,6 +64,13 @@ func (l *lTexture) loadFromFile(path string) (err error) {
 }
 
 func (l *lTexture) free() {
+	fmt.Printf("Here's the deal %v\n", l)
+	if l == nil {
+		fmt.Print("not needed\n")
+
+		return
+	}
+
 	if l.mTexture != nil {
 		l.mTexture.Destroy()
 		l.mTexture = nil
@@ -72,9 +79,13 @@ func (l *lTexture) free() {
 	}
 }
 
-func (l *lTexture) render(x int32, y int32) {
-	renderQuad := &sdl.Rect{X: x, Y: y, W: l.mWidth, H: l.mHeight}
-	gRenderer.Copy(l.mTexture, nil, renderQuad)
+func (l *lTexture) render(x int32, y int32, clip *sdl.Rect) {
+	renderQuad := sdl.Rect{}
+	renderQuad.X = x
+	renderQuad.Y = y
+	renderQuad.W = clip.W
+	renderQuad.H = clip.H
+	gRenderer.Copy(l.mTexture, clip, &renderQuad)
 }
 
 func init() {
@@ -120,24 +131,45 @@ func init() {
 }
 
 func loadMedia() (err error) {
-	//Load texture
-
-	if err = gFooTexture.loadFromFile("media/foo.png"); err != nil {
-		fmt.Printf("Failed to load foo texture image!\n")
-		return
+	//Load textures
+	if err = gSpriteSheetTexture.loadFromFile("media/dots.png"); err != nil {
+		fmt.Printf("I broke.")
 	}
 
-	if err = gBackgroundTexture.loadFromFile("media/background.png"); err != nil {
-		fmt.Printf("Failed to load background texture image!\n")
-		return
+	// Load rects
+	gSpriteClips[0] = sdl.Rect{
+		W: 100,
+		H: 100,
+		X: 0,
+		Y: 0,
+	}
+
+	gSpriteClips[1] = sdl.Rect{
+		W: 100,
+		H: 100,
+		X: 100,
+		Y: 0,
+	}
+
+	gSpriteClips[2] = sdl.Rect{
+		W: 100,
+		H: 100,
+		X: 0,
+		Y: 100,
+	}
+
+	gSpriteClips[3] = sdl.Rect{
+		W: 100,
+		H: 100,
+		X: 100,
+		Y: 100,
 	}
 
 	return
 }
 
 func close() {
-	gFooTexture.free()
-	gBackgroundTexture.free()
+	gSpriteSheetTexture.free()
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -150,6 +182,9 @@ func close() {
 }
 
 func main() {
+	//Free resources and close SDL
+	defer close()
+
 	//Load media
 	if err := loadMedia(); err != nil {
 		fmt.Printf("Failed to load media!\n")
@@ -175,17 +210,13 @@ func main() {
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			//Render background texture to screen
-			gBackgroundTexture.render(0, 0)
-
-			//Render Foo' to the screen
-			gFooTexture.render(240, 190)
+			gSpriteSheetTexture.render(0, 0, &gSpriteClips[0])
+			gSpriteSheetTexture.render(0, screenHeight-gSpriteClips[1].H, &gSpriteClips[1])
+			gSpriteSheetTexture.render(screenWidth-gSpriteClips[2].W, 0, &gSpriteClips[2])
+			gSpriteSheetTexture.render(screenWidth-gSpriteClips[3].W, screenHeight-gSpriteClips[3].H, &gSpriteClips[3])
 
 			//Update screen
 			gRenderer.Present()
 		}
 	}
-
-	//Free resources and close SDL
-	close()
 }
