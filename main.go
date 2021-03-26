@@ -18,7 +18,64 @@ var gWindow *sdl.Window
 var gRenderer *sdl.Renderer
 
 //Current displayed texture
-var gTexture *sdl.Texture
+// var gTexture *sdl.Texture
+
+// Scene textures
+var gFooTexture lTexture
+var gBackgroundTexture lTexture
+
+//
+
+// Texture wrapper
+type lTexture struct {
+	// The hardware texture
+	mTexture *sdl.Texture
+
+	// Image dimensions
+	mWidth  int32
+	mHeight int32
+}
+
+func (l *lTexture) loadFromFile(path string) (err error) {
+	l.free()
+
+	var loadedSurface *sdl.Surface
+	defer loadedSurface.Free()
+
+	var newTexture *sdl.Texture
+
+	if loadedSurface, err = img.Load(path); err != nil {
+		fmt.Printf("Unable to load image %s! IMG error: %s", path, err)
+		return
+	}
+
+	loadedSurface.SetColorKey(true, sdl.MapRGB(loadedSurface.Format, 0, 0xff, 0xff))
+
+	if newTexture, err = gRenderer.CreateTextureFromSurface(loadedSurface); err != nil {
+		fmt.Printf("Unable to load texture. SDL Error: %s", err)
+		return
+	}
+
+	l.mWidth = loadedSurface.W
+	l.mHeight = loadedSurface.H
+	l.mTexture = newTexture
+
+	return
+}
+
+func (l *lTexture) free() {
+	if l.mTexture != nil {
+		l.mTexture.Destroy()
+		l.mTexture = nil
+		l.mWidth = 0
+		l.mHeight = 0
+	}
+}
+
+func (l *lTexture) render(x int32, y int32) {
+	renderQuad := &sdl.Rect{X: x, Y: y, W: l.mWidth, H: l.mHeight}
+	gRenderer.Copy(l.mTexture, nil, renderQuad)
+}
 
 func init() {
 	var err error
@@ -65,44 +122,31 @@ func init() {
 func loadMedia() (err error) {
 	//Load texture
 
-	if gTexture = loadTexture("media/viewport.png"); err != nil {
-		fmt.Printf("Failed to load texture image!\n")
+	if err = gFooTexture.loadFromFile("media/foo.png"); err != nil {
+		fmt.Printf("Failed to load foo texture image!\n")
+		return
+	}
+
+	if err = gBackgroundTexture.loadFromFile("media/background.png"); err != nil {
+		fmt.Printf("Failed to load background texture image!\n")
+		return
 	}
 
 	return
 }
 
 func close() {
-	//Free loaded image
-	gTexture.Destroy()
+	gFooTexture.free()
+	gBackgroundTexture.free()
 
-	//Destroy window
 	gRenderer.Destroy()
 	gWindow.Destroy()
+	gRenderer = nil
+	gWindow = nil
 
 	//Quit SDL subsystems
 	img.Quit()
 	sdl.Quit()
-}
-
-func loadTexture(path string) (newTexture *sdl.Texture) {
-	var err error
-
-	//Load image at specified path
-	loadedSurface, err := img.Load(path)
-
-	if err != nil {
-		fmt.Printf("Unable to load image %s! SDL_image Error: %s\n", path, err)
-	}
-	//Create texture from surface pixels
-	if newTexture, err = gRenderer.CreateTextureFromSurface(loadedSurface); err != nil {
-		fmt.Printf("Unable to create texture from %s! SDL Error: %s\n", path, err)
-	}
-
-	//Get rid of old loaded surface
-	loadedSurface.Free()
-
-	return
 }
 
 func main() {
@@ -127,48 +171,15 @@ func main() {
 
 				e = sdl.PollEvent()
 			}
-
 			//Clear screen
-			gRenderer.SetDrawColor(0x00, 0xFF, 0xFF, 0xFF)
+			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			//Top left corner viewport
-			topLeftViewport := sdl.Rect{
-				X: 0,
-				Y: 0,
-				W: screenWidth,
-				H: screenHeight,
-			}
+			//Render background texture to screen
+			gBackgroundTexture.render(0, 0)
 
-			gRenderer.Copy(gTexture, nil, nil)
-			gRenderer.SetViewport(&topLeftViewport)
-
-			//Render texture to screen
-			gRenderer.Copy(gTexture, nil, nil)
-
-			//Top right viewport
-			topRightViewport := sdl.Rect{
-				X: screenWidth / 2,
-				Y: 0,
-				W: screenWidth / 2,
-				H: screenHeight / 2,
-			}
-			gRenderer.SetViewport(&topRightViewport)
-
-			//Render texture to screen
-			gRenderer.Copy(gTexture, nil, nil)
-
-			// //Bottom viewport
-			// bottomViewport := sdl.Rect{
-			// 	X: 0,
-			// 	Y: screenHeight / 2,
-			// 	W: screenWidth,
-			// 	H: screenHeight / 2,
-			// }
-			// gRenderer.SetViewport(&bottomViewport)
-
-			// //Render texture to screen
-			// gRenderer.Copy(gTexture, nil, nil)
+			//Render Foo' to the screen
+			gFooTexture.render(240, 190)
 
 			//Update screen
 			gRenderer.Present()
