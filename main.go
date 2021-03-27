@@ -20,9 +20,8 @@ var gRenderer *sdl.Renderer
 //Current displayed texture
 // var gTexture *sdl.Texture
 
-// Scene sprites
-var gSpriteClips [4]sdl.Rect
-var gSpriteSheetTexture *lTexture = &lTexture{}
+// graphic
+var gColorsTexture lTexture
 
 // Texture wrapper
 type lTexture struct {
@@ -88,6 +87,10 @@ func (l *lTexture) render(x int32, y int32, clip *sdl.Rect) {
 	gRenderer.Copy(l.mTexture, clip, &renderQuad)
 }
 
+func (l *lTexture) setColor(red uint8, green uint8, blue uint8) {
+	l.mTexture.SetColorMod(red, green, blue)
+}
+
 func init() {
 	var err error
 
@@ -132,44 +135,15 @@ func init() {
 
 func loadMedia() (err error) {
 	//Load textures
-	if err = gSpriteSheetTexture.loadFromFile("media/dots.png"); err != nil {
+	if err = gColorsTexture.loadFromFile("media/colors.png"); err != nil {
 		fmt.Printf("I broke.")
-	}
-
-	// Load rects
-	gSpriteClips[0] = sdl.Rect{
-		W: 100,
-		H: 100,
-		X: 0,
-		Y: 0,
-	}
-
-	gSpriteClips[1] = sdl.Rect{
-		W: 100,
-		H: 100,
-		X: 100,
-		Y: 0,
-	}
-
-	gSpriteClips[2] = sdl.Rect{
-		W: 100,
-		H: 100,
-		X: 0,
-		Y: 100,
-	}
-
-	gSpriteClips[3] = sdl.Rect{
-		W: 100,
-		H: 100,
-		X: 100,
-		Y: 100,
 	}
 
 	return
 }
 
 func close() {
-	gSpriteSheetTexture.free()
+	gColorsTexture.free()
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -192,6 +166,11 @@ func main() {
 		//Main loop flag
 		quit := false
 
+		// Modulation components
+		var r uint8 = 255
+		var g uint8 = 255
+		var b uint8 = 255
+
 		//While application is running
 		for !quit {
 			//Event handler
@@ -202,6 +181,26 @@ func main() {
 				//User requests quit
 				if e.GetType() == sdl.QUIT {
 					quit = true
+				} else if e.GetType() == sdl.KEYDOWN {
+					switch e.(*sdl.KeyboardEvent).Keysym.Sym {
+					case sdl.K_q:
+						r += 32
+
+					case sdl.K_w:
+						g += 32
+
+					case sdl.K_e:
+						b += 32
+
+					case sdl.K_a:
+						r -= 32
+
+					case sdl.K_s:
+						g -= 32
+
+					case sdl.K_d:
+						b -= 32
+					}
 				}
 
 				e = sdl.PollEvent()
@@ -210,10 +209,8 @@ func main() {
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			gSpriteSheetTexture.render(0, 0, &gSpriteClips[0])
-			gSpriteSheetTexture.render(0, screenHeight-gSpriteClips[1].H, &gSpriteClips[1])
-			gSpriteSheetTexture.render(screenWidth-gSpriteClips[2].W, 0, &gSpriteClips[2])
-			gSpriteSheetTexture.render(screenWidth-gSpriteClips[3].W, screenHeight-gSpriteClips[3].H, &gSpriteClips[3])
+			gColorsTexture.setColor(r, g, b)
+			gColorsTexture.render(0, 0, &sdl.Rect{X: 0, Y: 0, W: screenWidth, H: screenHeight})
 
 			//Update screen
 			gRenderer.Present()
