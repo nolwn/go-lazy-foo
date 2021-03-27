@@ -21,75 +21,8 @@ var gRenderer *sdl.Renderer
 // var gTexture *sdl.Texture
 
 // graphic
-var gColorsTexture lTexture
-
-// Texture wrapper
-type lTexture struct {
-	// The hardware texture
-	mTexture *sdl.Texture
-
-	// Image dimensions
-	mWidth  int32
-	mHeight int32
-}
-
-func (l *lTexture) loadFromFile(path string) (err error) {
-	if l != nil {
-		l.free()
-	}
-
-	var loadedSurface *sdl.Surface
-	defer loadedSurface.Free()
-
-	var newTexture *sdl.Texture
-
-	if loadedSurface, err = img.Load(path); err != nil {
-		fmt.Printf("Unable to load image %s! IMG error: %s", path, err)
-		return
-	}
-
-	loadedSurface.SetColorKey(true, sdl.MapRGB(loadedSurface.Format, 0, 0xff, 0xff))
-
-	if newTexture, err = gRenderer.CreateTextureFromSurface(loadedSurface); err != nil {
-		fmt.Printf("Unable to load texture. SDL Error: %s", err)
-		return
-	}
-
-	l.mWidth = loadedSurface.W
-	l.mHeight = loadedSurface.H
-	l.mTexture = newTexture
-
-	return
-}
-
-func (l *lTexture) free() {
-	fmt.Printf("Here's the deal %v\n", l)
-	if l == nil {
-		fmt.Print("not needed\n")
-
-		return
-	}
-
-	if l.mTexture != nil {
-		l.mTexture.Destroy()
-		l.mTexture = nil
-		l.mWidth = 0
-		l.mHeight = 0
-	}
-}
-
-func (l *lTexture) render(x int32, y int32, clip *sdl.Rect) {
-	renderQuad := sdl.Rect{}
-	renderQuad.X = x
-	renderQuad.Y = y
-	renderQuad.W = clip.W
-	renderQuad.H = clip.H
-	gRenderer.Copy(l.mTexture, clip, &renderQuad)
-}
-
-func (l *lTexture) setColor(red uint8, green uint8, blue uint8) {
-	l.mTexture.SetColorMod(red, green, blue)
-}
+var gBackgroundTexture lTexture
+var gModulatedTexture lTexture
 
 func init() {
 	var err error
@@ -135,15 +68,23 @@ func init() {
 
 func loadMedia() (err error) {
 	//Load textures
-	if err = gColorsTexture.loadFromFile("media/colors.png"); err != nil {
-		fmt.Printf("I broke.")
+	if err = gBackgroundTexture.loadFromFile("media/fadein.png"); err != nil {
+		fmt.Printf("Could not load media/fadein.png")
+		return
 	}
+
+	if err = gModulatedTexture.loadFromFile("media/fadeout.png"); err != nil {
+		fmt.Printf("Could not load media/fadeout.png")
+		return
+	}
+
+	gModulatedTexture.setBlendMode(sdl.BLENDMODE_BLEND)
 
 	return
 }
 
 func close() {
-	gColorsTexture.free()
+	gBackgroundTexture.free()
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -166,10 +107,8 @@ func main() {
 		//Main loop flag
 		quit := false
 
-		// Modulation components
-		var r uint8 = 255
-		var g uint8 = 255
-		var b uint8 = 255
+		// Modulation component
+		var a uint8 = 255
 
 		//While application is running
 		for !quit {
@@ -183,34 +122,32 @@ func main() {
 					quit = true
 				} else if e.GetType() == sdl.KEYDOWN {
 					switch e.(*sdl.KeyboardEvent).Keysym.Sym {
-					case sdl.K_q:
-						r += 32
-
 					case sdl.K_w:
-						g += 32
-
-					case sdl.K_e:
-						b += 32
-
-					case sdl.K_a:
-						r -= 32
-
+						if a > 255-32 {
+							a = 255
+						} else {
+							a += 32
+						}
 					case sdl.K_s:
-						g -= 32
-
-					case sdl.K_d:
-						b -= 32
+						if a < 32 {
+							a = 0
+						} else {
+							a -= 32
+						}
 					}
 				}
 
 				e = sdl.PollEvent()
 			}
+
 			//Clear screen
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			gColorsTexture.setColor(r, g, b)
-			gColorsTexture.render(0, 0, &sdl.Rect{X: 0, Y: 0, W: screenWidth, H: screenHeight})
+			gBackgroundTexture.render(0, 0, nil)
+
+			gModulatedTexture.setAlpha(a)
+			gModulatedTexture.render(0, 0, nil)
 
 			//Update screen
 			gRenderer.Present()
