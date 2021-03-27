@@ -20,9 +20,11 @@ var gRenderer *sdl.Renderer
 //Current displayed texture
 // var gTexture *sdl.Texture
 
-// graphic
-var gBackgroundTexture lTexture
-var gModulatedTexture lTexture
+// Walking animation
+const walkingAnimationFrames = 4
+
+var gSpriteClips [walkingAnimationFrames]sdl.Rect
+var gSpriteSheetTexture lTexture
 
 func init() {
 	var err error
@@ -52,7 +54,7 @@ func init() {
 	}
 
 	//Create renderer for window
-	if gRenderer, err = sdl.CreateRenderer(gWindow, -1, sdl.RENDERER_ACCELERATED); err != nil {
+	if gRenderer, err = sdl.CreateRenderer(gWindow, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC); err != nil {
 		fmt.Printf("Renderer could not be created! SDL Error: %s\n", err)
 		panic(err)
 	}
@@ -68,23 +70,44 @@ func init() {
 
 func loadMedia() (err error) {
 	//Load textures
-	if err = gBackgroundTexture.loadFromFile("media/fadein.png"); err != nil {
-		fmt.Printf("Could not load media/fadein.png")
+	if err = gSpriteSheetTexture.loadFromFile("media/foo.png"); err != nil {
+		fmt.Printf("Could not load media/foo.png")
 		return
 	}
 
-	if err = gModulatedTexture.loadFromFile("media/fadeout.png"); err != nil {
-		fmt.Printf("Could not load media/fadeout.png")
-		return
+	gSpriteClips[0] = sdl.Rect{
+		X: 0,
+		Y: 0,
+		W: 64,
+		H: 205,
 	}
 
-	gModulatedTexture.setBlendMode(sdl.BLENDMODE_BLEND)
+	gSpriteClips[1] = sdl.Rect{
+		X: 62,
+		Y: 0,
+		W: 64,
+		H: 205,
+	}
+
+	gSpriteClips[2] = sdl.Rect{
+		X: 128,
+		Y: 0,
+		W: 64,
+		H: 205,
+	}
+
+	gSpriteClips[3] = sdl.Rect{
+		X: 196,
+		Y: 0,
+		W: 64,
+		H: 205,
+	}
 
 	return
 }
 
 func close() {
-	gBackgroundTexture.free()
+	gSpriteSheetTexture.free()
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -107,8 +130,8 @@ func main() {
 		//Main loop flag
 		quit := false
 
-		// Modulation component
-		var a uint8 = 255
+		//current animation frame
+		frame := 0
 
 		//While application is running
 		for !quit {
@@ -120,34 +143,22 @@ func main() {
 				//User requests quit
 				if e.GetType() == sdl.QUIT {
 					quit = true
-				} else if e.GetType() == sdl.KEYDOWN {
-					switch e.(*sdl.KeyboardEvent).Keysym.Sym {
-					case sdl.K_w:
-						if a > 255-32 {
-							a = 255
-						} else {
-							a += 32
-						}
-					case sdl.K_s:
-						if a < 32 {
-							a = 0
-						} else {
-							a -= 32
-						}
-					}
 				}
 
 				e = sdl.PollEvent()
+			}
+
+			frame++
+			if frame/4 >= walkingAnimationFrames {
+				frame = 0
 			}
 
 			//Clear screen
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			gBackgroundTexture.render(0, 0, nil)
-
-			gModulatedTexture.setAlpha(a)
-			gModulatedTexture.render(0, 0, nil)
+			currentClip := &gSpriteClips[frame/4]
+			gSpriteSheetTexture.render((screenWidth-currentClip.W)/2, (screenHeight-currentClip.H)/2, currentClip)
 
 			//Update screen
 			gRenderer.Present()
