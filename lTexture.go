@@ -46,6 +46,32 @@ func (l *lTexture) loadFromFile(path string) (err error) {
 	return
 }
 
+func (l *lTexture) loadFromRenderedText(textureText string, textColor sdl.Color) (err error) {
+	if l != nil {
+		l.free()
+	}
+
+	var textSurface *sdl.Surface
+
+	//Render text surface
+	if textSurface, err = gFont.RenderUTF8Solid(textureText, textColor); err != nil {
+		defer textSurface.Free()
+
+		fmt.Printf("Could not load text surface: %s\n", err)
+		return
+	}
+
+	if l.mTexture, err = gRenderer.CreateTextureFromSurface(textSurface); err != nil {
+		fmt.Printf("Could not create texture from surface: %s\n", err)
+		return
+	}
+
+	l.mWidth = textSurface.W
+	l.mHeight = textSurface.H
+
+	return
+}
+
 func (l *lTexture) free() {
 	if l == nil {
 		fmt.Print("not needed\n")

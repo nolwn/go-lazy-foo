@@ -5,6 +5,7 @@ import (
 
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/ttf"
 )
 
 //Screen dimension constants
@@ -17,8 +18,11 @@ var gWindow *sdl.Window
 //The window renderer
 var gRenderer *sdl.Renderer
 
-//arrow texture
-var gArrowTexture lTexture
+//Globallty used font
+var gFont *ttf.Font
+
+//Rendered texture
+var gTextTexture lTexture
 
 func init() {
 	var err error
@@ -59,21 +63,36 @@ func init() {
 	//Initialize PNG loading
 	if err := img.Init(img.INIT_PNG); err != nil {
 		fmt.Printf("SDL_image could not initialize! SDL_image Error: %s\n", err)
+		panic(err)
+	}
+
+	//Initialize SDL_ttf
+	if err := ttf.Init(); err != nil {
+		fmt.Printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", err)
+		panic(err)
 	}
 }
 
 func loadMedia() (err error) {
-	//Load textures
-	if err = gArrowTexture.loadFromFile("media/arrow.png"); err != nil {
-		fmt.Printf("Could not load media/foo.png")
-		return
+	//open the font
+	if gFont, err = ttf.OpenFont("media/lazy.ttf", 28); err != nil {
+		fmt.Printf("Could not load font. SDL_TTF error: %s\n", err)
+	}
+
+	textColor := sdl.Color{R: 0, G: 0, B: 0, A: 0}
+
+	if err = gTextTexture.loadFromRenderedText("The quick brown fox jumps over the lazy dog", textColor); err != nil {
+		fmt.Printf("Failed to render text texture!\n")
 	}
 
 	return
 }
 
 func close() {
-	gArrowTexture.free()
+	gTextTexture.free()
+
+	gFont.Close()
+	gFont = nil
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -96,12 +115,6 @@ func main() {
 		//Main loop flag
 		quit := false
 
-		//angle of rotation
-		degrees := 0.0
-
-		//flip type
-		flipType := sdl.FLIP_NONE
-
 		//While application is running
 		for !quit {
 			//Event handler
@@ -112,23 +125,6 @@ func main() {
 				//User requests quit
 				if e.GetType() == sdl.QUIT {
 					quit = true
-				} else if e.GetType() == sdl.KEYDOWN {
-					switch e.(*sdl.KeyboardEvent).Keysym.Sym {
-					case sdl.K_a:
-						degrees -= 60
-
-					case sdl.K_d:
-						degrees += 60
-
-					case sdl.K_q:
-						flipType = sdl.FLIP_HORIZONTAL
-
-					case sdl.K_w:
-						flipType = sdl.FLIP_NONE
-
-					case sdl.K_e:
-						flipType = sdl.FLIP_VERTICAL
-					}
 				}
 
 				e = sdl.PollEvent()
@@ -138,7 +134,7 @@ func main() {
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			gArrowTexture.render((screenWidth-gArrowTexture.mWidth)/2, (screenHeight-gArrowTexture.mHeight)/2, nil, degrees, nil, flipType)
+			gTextTexture.render((screenWidth-gTextTexture.mWidth)/2, (screenHeight-gTextTexture.mHeight)/2, nil, 0, nil, 0)
 
 			//Update screen
 			gRenderer.Present()
