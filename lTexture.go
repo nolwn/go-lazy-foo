@@ -61,7 +61,7 @@ func (l *lTexture) free() {
 	}
 }
 
-func (l *lTexture) render(x int32, y int32, clip *sdl.Rect) {
+func (l *lTexture) render(x int32, y int32, clip *sdl.Rect, angle float64, center *sdl.Point, flip sdl.RendererFlip) {
 	renderQuad := sdl.Rect{}
 	renderQuad.X = x
 	renderQuad.Y = y
@@ -70,11 +70,11 @@ func (l *lTexture) render(x int32, y int32, clip *sdl.Rect) {
 		renderQuad.W = clip.W
 		renderQuad.H = clip.H
 	} else {
-		renderQuad.W = screenWidth
-		renderQuad.H = screenHeight
+		renderQuad.W = l.mWidth
+		renderQuad.H = l.mHeight
 	}
 
-	gRenderer.Copy(l.mTexture, clip, &renderQuad)
+	gRenderer.CopyEx(l.mTexture, clip, &renderQuad, angle, center, flip)
 }
 
 func (l *lTexture) setBlendMode(blending sdl.BlendMode) {

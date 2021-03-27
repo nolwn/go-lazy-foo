@@ -17,14 +17,8 @@ var gWindow *sdl.Window
 //The window renderer
 var gRenderer *sdl.Renderer
 
-//Current displayed texture
-// var gTexture *sdl.Texture
-
-// Walking animation
-const walkingAnimationFrames = 4
-
-var gSpriteClips [walkingAnimationFrames]sdl.Rect
-var gSpriteSheetTexture lTexture
+//arrow texture
+var gArrowTexture lTexture
 
 func init() {
 	var err error
@@ -70,44 +64,16 @@ func init() {
 
 func loadMedia() (err error) {
 	//Load textures
-	if err = gSpriteSheetTexture.loadFromFile("media/foo.png"); err != nil {
+	if err = gArrowTexture.loadFromFile("media/arrow.png"); err != nil {
 		fmt.Printf("Could not load media/foo.png")
 		return
-	}
-
-	gSpriteClips[0] = sdl.Rect{
-		X: 0,
-		Y: 0,
-		W: 64,
-		H: 205,
-	}
-
-	gSpriteClips[1] = sdl.Rect{
-		X: 62,
-		Y: 0,
-		W: 64,
-		H: 205,
-	}
-
-	gSpriteClips[2] = sdl.Rect{
-		X: 128,
-		Y: 0,
-		W: 64,
-		H: 205,
-	}
-
-	gSpriteClips[3] = sdl.Rect{
-		X: 196,
-		Y: 0,
-		W: 64,
-		H: 205,
 	}
 
 	return
 }
 
 func close() {
-	gSpriteSheetTexture.free()
+	gArrowTexture.free()
 
 	gRenderer.Destroy()
 	gWindow.Destroy()
@@ -130,8 +96,11 @@ func main() {
 		//Main loop flag
 		quit := false
 
-		//current animation frame
-		frame := 0
+		//angle of rotation
+		degrees := 0.0
+
+		//flip type
+		flipType := sdl.FLIP_NONE
 
 		//While application is running
 		for !quit {
@@ -143,22 +112,33 @@ func main() {
 				//User requests quit
 				if e.GetType() == sdl.QUIT {
 					quit = true
+				} else if e.GetType() == sdl.KEYDOWN {
+					switch e.(*sdl.KeyboardEvent).Keysym.Sym {
+					case sdl.K_a:
+						degrees -= 60
+
+					case sdl.K_d:
+						degrees += 60
+
+					case sdl.K_q:
+						flipType = sdl.FLIP_HORIZONTAL
+
+					case sdl.K_w:
+						flipType = sdl.FLIP_NONE
+
+					case sdl.K_e:
+						flipType = sdl.FLIP_VERTICAL
+					}
 				}
 
 				e = sdl.PollEvent()
-			}
-
-			frame++
-			if frame/4 >= walkingAnimationFrames {
-				frame = 0
 			}
 
 			//Clear screen
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			currentClip := &gSpriteClips[frame/4]
-			gSpriteSheetTexture.render((screenWidth-currentClip.W)/2, (screenHeight-currentClip.H)/2, currentClip)
+			gArrowTexture.render((screenWidth-gArrowTexture.mWidth)/2, (screenHeight-gArrowTexture.mHeight)/2, nil, degrees, nil, flipType)
 
 			//Update screen
 			gRenderer.Present()
