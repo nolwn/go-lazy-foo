@@ -12,6 +12,27 @@ import (
 const screenWidth = 640
 const screenHeight = 480
 
+//Button constants
+const buttonWidth = 300
+const buttonHeight = 200
+const totalButtons = 4
+
+//Buttons
+var gButtons [totalButtons]lButton = [totalButtons]lButton{
+	{mPosition: sdl.Point{X: 0, Y: 0}},
+	{mPosition: sdl.Point{X: screenWidth - buttonWidth, Y: 0}},
+	{mPosition: sdl.Point{X: 0, Y: screenHeight - buttonHeight}},
+	{mPosition: sdl.Point{X: screenWidth - buttonWidth, Y: screenHeight - buttonHeight}},
+}
+
+//button sprites
+var gSpriteClips = [buttonSpriteTotal]sdl.Rect{
+	{X: 0, Y: 0, W: buttonWidth, H: buttonHeight},
+	{X: 0, Y: buttonHeight, W: buttonWidth, H: buttonHeight},
+	{X: 0, Y: buttonHeight * 2, W: buttonWidth, H: buttonHeight},
+	{X: 0, Y: buttonHeight * 3, W: buttonWidth, H: buttonHeight},
+}
+
 //The window we'll be rendering to
 var gWindow *sdl.Window
 
@@ -22,7 +43,7 @@ var gRenderer *sdl.Renderer
 var gFont *ttf.Font
 
 //Rendered texture
-var gTextTexture lTexture
+var gButtonSpriteSheetTexture lTexture
 
 func init() {
 	var err error
@@ -74,14 +95,7 @@ func init() {
 }
 
 func loadMedia() (err error) {
-	//open the font
-	if gFont, err = ttf.OpenFont("media/lazy.ttf", 28); err != nil {
-		fmt.Printf("Could not load font. SDL_TTF error: %s\n", err)
-	}
-
-	textColor := sdl.Color{R: 0, G: 0, B: 0, A: 0}
-
-	if err = gTextTexture.loadFromRenderedText("The quick brown fox jumps over the lazy dog", textColor); err != nil {
+	if err = gButtonSpriteSheetTexture.loadFromFile("media/button.png"); err != nil {
 		fmt.Printf("Failed to render text texture!\n")
 	}
 
@@ -89,7 +103,7 @@ func loadMedia() (err error) {
 }
 
 func close() {
-	gTextTexture.free()
+	gButtonSpriteSheetTexture.free()
 
 	gFont.Close()
 	gFont = nil
@@ -127,6 +141,10 @@ func main() {
 					quit = true
 				}
 
+				for i := 0; i < buttonSpriteTotal; i++ {
+					gButtons[i].handleEvent(&e)
+				}
+
 				e = sdl.PollEvent()
 			}
 
@@ -134,7 +152,9 @@ func main() {
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			gTextTexture.render((screenWidth-gTextTexture.mWidth)/2, (screenHeight-gTextTexture.mHeight)/2, nil, 0, nil, 0)
+			for i := 0; i < buttonSpriteTotal; i++ {
+				gButtons[i].render()
+			}
 
 			//Update screen
 			gRenderer.Present()
