@@ -12,27 +12,6 @@ import (
 const screenWidth = 640
 const screenHeight = 480
 
-//Button constants
-const buttonWidth = 300
-const buttonHeight = 200
-const totalButtons = 4
-
-//Buttons
-var gButtons [totalButtons]lButton = [totalButtons]lButton{
-	{mPosition: sdl.Point{X: 0, Y: 0}},
-	{mPosition: sdl.Point{X: screenWidth - buttonWidth, Y: 0}},
-	{mPosition: sdl.Point{X: 0, Y: screenHeight - buttonHeight}},
-	{mPosition: sdl.Point{X: screenWidth - buttonWidth, Y: screenHeight - buttonHeight}},
-}
-
-//button sprites
-var gSpriteClips = [buttonSpriteTotal]sdl.Rect{
-	{X: 0, Y: 0, W: buttonWidth, H: buttonHeight},
-	{X: 0, Y: buttonHeight, W: buttonWidth, H: buttonHeight},
-	{X: 0, Y: buttonHeight * 2, W: buttonWidth, H: buttonHeight},
-	{X: 0, Y: buttonHeight * 3, W: buttonWidth, H: buttonHeight},
-}
-
 //The window we'll be rendering to
 var gWindow *sdl.Window
 
@@ -43,7 +22,13 @@ var gRenderer *sdl.Renderer
 var gFont *ttf.Font
 
 //Rendered texture
-var gButtonSpriteSheetTexture lTexture
+var gCurrentTexture *lTexture
+
+var gUpTexture lTexture
+var gRightTexture lTexture
+var gDownTexture lTexture
+var gLeftTexture lTexture
+var gPressTexture lTexture
 
 func init() {
 	var err error
@@ -95,7 +80,23 @@ func init() {
 }
 
 func loadMedia() (err error) {
-	if err = gButtonSpriteSheetTexture.loadFromFile("media/button.png"); err != nil {
+	if err = gUpTexture.loadFromFile("media/up.png"); err != nil {
+		fmt.Printf("Failed to render text texture!\n")
+	}
+
+	if err = gRightTexture.loadFromFile("media/right.png"); err != nil {
+		fmt.Printf("Failed to render text texture!\n")
+	}
+
+	if err = gDownTexture.loadFromFile("media/down.png"); err != nil {
+		fmt.Printf("Failed to render text texture!\n")
+	}
+
+	if err = gLeftTexture.loadFromFile("media/left.png"); err != nil {
+		fmt.Printf("Failed to render text texture!\n")
+	}
+
+	if err = gPressTexture.loadFromFile("media/press.png"); err != nil {
 		fmt.Printf("Failed to render text texture!\n")
 	}
 
@@ -103,7 +104,7 @@ func loadMedia() (err error) {
 }
 
 func close() {
-	gButtonSpriteSheetTexture.free()
+	gCurrentTexture.free()
 
 	gFont.Close()
 	gFont = nil
@@ -141,10 +142,6 @@ func main() {
 					quit = true
 				}
 
-				for i := 0; i < buttonSpriteTotal; i++ {
-					gButtons[i].handleEvent(&e)
-				}
-
 				e = sdl.PollEvent()
 			}
 
@@ -152,9 +149,21 @@ func main() {
 			gRenderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 			gRenderer.Clear()
 
-			for i := 0; i < buttonSpriteTotal; i++ {
-				gButtons[i].render()
+			//set texture based on current keystate
+			currentKeyStates := sdl.GetKeyboardState()
+			if currentKeyStates[sdl.SCANCODE_UP] == 1 {
+				gCurrentTexture = &gUpTexture
+			} else if currentKeyStates[sdl.SCANCODE_RIGHT] == 1 {
+				gCurrentTexture = &gRightTexture
+			} else if currentKeyStates[sdl.SCANCODE_DOWN] == 1 {
+				gCurrentTexture = &gDownTexture
+			} else if currentKeyStates[sdl.SCANCODE_LEFT] == 1 {
+				gCurrentTexture = &gLeftTexture
+			} else {
+				gCurrentTexture = &gPressTexture
 			}
+
+			gCurrentTexture.render(0, 0, nil, 0, nil, 0)
 
 			//Update screen
 			gRenderer.Present()

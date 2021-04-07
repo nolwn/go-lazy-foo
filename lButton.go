@@ -10,6 +10,11 @@ const (
 	buttonSpriteTotal
 )
 
+//Button constants
+const buttonWidth = 300
+const buttonHeight = 200
+const totalButtons = 4
+
 type lButton struct {
 	mPosition      sdl.Point
 	mCurrentSprite int
@@ -57,7 +62,7 @@ func (b *lButton) handleEvent(e *sdl.Event) {
 	}
 }
 
-func (b *lButton) render() {
-	//show current button sprite
-	gButtonSpriteSheetTexture.render(b.mPosition.X, b.mPosition.Y, &gSpriteClips[b.mCurrentSprite], 0, nil, 0)
-}
+// func (b *lButton) render() {
+// 	//show current button sprite
+// 	gCurrentTexture.render(b.mPosition.X, b.mPosition.Y, &gCurrentTexture[b.mCurrentSprite], 0, nil, 0)
+// }
